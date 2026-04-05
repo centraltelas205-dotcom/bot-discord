@@ -12,7 +12,7 @@ const {
 } = require('discord.js');
 
 // ✅ TOKEN VINDO DO RAILWAY
-const TOKEN = process.env.TOKEN;
+console.log("MTQ5MDEzNzc3OTExMDI4NTM0Mg.G9PIlm.2klYWgXcevxA07CFfUWRLAEDAbN0sPGdLzK-Wo:", process.env.TOKEN);
 
 const CLIENT_ID = "1490137779110285342";
 const GUILD_ID = "1477001067366584400";
