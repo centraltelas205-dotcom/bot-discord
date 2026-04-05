@@ -11,7 +11,9 @@ const {
     EmbedBuilder
 } = require('discord.js');
 
-const TOKEN = "MTQ5MDEzNzc3OTExMDI4NTM0Mg.GEP1mb.NQq-7KHTngjd-5E3wuJ8Kn7fn-aiHMydx_3Bdo";
+// ✅ TOKEN VINDO DO RAILWAY
+const TOKEN = process.env.TOKEN;
+
 const CLIENT_ID = "1490137779110285342";
 const GUILD_ID = "1477001067366584400";
 const CANAL_NOTIFICACAO = "1490147860560216064";
@@ -58,12 +60,17 @@ const commands = [
 
 const rest = new REST({ version: '10' }).setToken(TOKEN);
 
+// 🔥 REGISTRA COMANDOS (só quando iniciar)
 (async () => {
-    await rest.put(
-        Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
-        { body: commands }
-    );
-    console.log("✅ Comandos registrados");
+    try {
+        await rest.put(
+            Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
+            { body: commands }
+        );
+        console.log("✅ Comandos registrados");
+    } catch (err) {
+        console.error(err);
+    }
 })();
 
 client.once('ready', () => {
@@ -79,7 +86,7 @@ client.on(Events.InteractionCreate, async interaction => {
         try {
             const id = interaction.customId;
 
-            // 🔥 BOTÃO ADMIN (ESTOQUE)
+            // 🔥 BOTÃO ADMIN
             if (id.startsWith("estoque_")) {
                 const produto = id.replace("estoque_", "");
 
@@ -92,7 +99,7 @@ client.on(Events.InteractionCreate, async interaction => {
                 for (const userId of pedidos[produto]) {
                     try {
                         const user = await client.users.fetch(userId);
-                        await user.send(`🔥 ${produto} voltou ao estoque! Corre garantir!`);
+                        await user.send(`🔥 ${produto} voltou ao estoque!`);
                     } catch {}
                 }
 
@@ -103,7 +110,7 @@ client.on(Events.InteractionCreate, async interaction => {
                 });
             }
 
-            // 📦 BOTÃO CLIENTE
+            // 📦 CLIENTE
             const produto = id;
 
             if (!pedidos[produto]) pedidos[produto] = [];
@@ -123,30 +130,25 @@ client.on(Events.InteractionCreate, async interaction => {
             const canal = await client.channels.fetch(CANAL_NOTIFICACAO);
 
             if (canal) {
-                await canal.send(`📢 **Novo pedido!**\n👤 ${interaction.user.tag}\n📦 ${produto}`);
+                await canal.send(`📢 Novo pedido!\n👤 ${interaction.user.tag}\n📦 ${produto}`);
             }
 
         } catch (error) {
             console.error(error);
-
-            await interaction.editReply({
-                content: "❌ Erro"
-            });
+            await interaction.editReply({ content: "❌ Erro" });
         }
     }
 
     // 💬 COMANDOS
     if (interaction.isChatInputCommand()) {
 
-        // 📦 PAINEL CLIENTE (BONITO)
         if (interaction.commandName === "painel") {
             await interaction.deferReply();
 
             const embed = new EmbedBuilder()
                 .setTitle("Peça seu produto sem estoque")
-                .setDescription("📦 **Produtos sem estoque**\n\nClique abaixo para entrar na lista de espera 👇")
-                .setColor("#5865F2")
-                .setFooter({ text: "Você será avisado quando voltar!" });
+                .setDescription("📦 Produtos sem estoque\n\nClique abaixo 👇")
+                .setColor("#5865F2");
 
             const rows = [];
 
@@ -171,7 +173,6 @@ client.on(Events.InteractionCreate, async interaction => {
             });
         }
 
-        // 🔥 PAINEL ADMIN
         if (interaction.commandName === "painel_admin") {
             await interaction.deferReply({ ephemeral: true });
 
