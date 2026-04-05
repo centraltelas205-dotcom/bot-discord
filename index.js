@@ -11,8 +11,11 @@ const {
     EmbedBuilder
 } = require('discord.js');
 
-// ✅ TOKEN VINDO DO RAILWAY
-console.log("MTQ5MDEzNzc3OTExMDI4NTM0Mg.G9PIlm.2klYWgXcevxA07CFfUWRLAEDAbN0sPGdLzK-Wo:", process.env.TOKEN);
+// ✅ TOKEN DO RAILWAY
+const TOKEN = process.env.TOKEN;
+
+// 🔍 DEBUG (pode apagar depois)
+console.log("MTQ5MDEzNzc3OTExMDI4NTM0Mg.G9PIlm.2klYWgXcevxA07CFfUWRLAEDAbN0sPGdLzK-Wo:", TOKEN);
 
 const CLIENT_ID = "1490137779110285342";
 const GUILD_ID = "1477001067366584400";
@@ -30,7 +33,6 @@ const produtos = [
     "Globoplay+Premiere","Prime+Premiere","Telecine","Spotify"
 ];
 
-// 🎨 EMOJIS
 const emojis = {
     "Netflix": "🎬",
     "Disney+": "🏰",
@@ -47,7 +49,6 @@ const emojis = {
     "Spotify": "🎵"
 };
 
-// 🔧 COMANDOS
 const commands = [
     new SlashCommandBuilder()
         .setName("painel")
@@ -60,7 +61,6 @@ const commands = [
 
 const rest = new REST({ version: '10' }).setToken(TOKEN);
 
-// 🔥 REGISTRA COMANDOS (só quando iniciar)
 (async () => {
     try {
         await rest.put(
@@ -79,14 +79,12 @@ client.once('ready', () => {
 
 client.on(Events.InteractionCreate, async interaction => {
 
-    // 🔘 BOTÕES
     if (interaction.isButton()) {
         await interaction.deferReply({ ephemeral: true });
 
         try {
             const id = interaction.customId;
 
-            // 🔥 BOTÃO ADMIN
             if (id.startsWith("estoque_")) {
                 const produto = id.replace("estoque_", "");
 
@@ -110,7 +108,6 @@ client.on(Events.InteractionCreate, async interaction => {
                 });
             }
 
-            // 📦 CLIENTE
             const produto = id;
 
             if (!pedidos[produto]) pedidos[produto] = [];
@@ -127,7 +124,13 @@ client.on(Events.InteractionCreate, async interaction => {
                 content: `✅ Você entrou na lista de ${produto}`
             });
 
-            const canal = await client.channels.fetch(CANAL_NOTIFICACAO);
+            // ✅ PROTEÇÃO PRA NÃO CRASHAR
+            let canal;
+            try {
+                canal = await client.channels.fetch(CANAL_NOTIFICACAO);
+            } catch (e) {
+                console.log("Erro ao buscar canal:", e);
+            }
 
             if (canal) {
                 await canal.send(`📢 Novo pedido!\n👤 ${interaction.user.tag}\n📦 ${produto}`);
@@ -139,7 +142,6 @@ client.on(Events.InteractionCreate, async interaction => {
         }
     }
 
-    // 💬 COMANDOS
     if (interaction.isChatInputCommand()) {
 
         if (interaction.commandName === "painel") {
