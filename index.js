@@ -29,9 +29,42 @@ let pedidos = {};
 const produtos = [
     "Netflix","Disney+","Prime Video","HBO Max","Crunchyroll",
     "Paramount+","Globoplay","IPTV","YouTube Premium",
+const {
+    Client,
+    GatewayIntentBits,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    Events,
+    REST,
+    Routes,
+    SlashCommandBuilder,
+    EmbedBuilder
+} = require('discord.js');
+
+// ✅ TOKEN DO RAILWAY
+const TOKEN = process.env.TOKEN;
+
+console.log("TOKEN:", TOKEN);
+
+const CLIENT_ID = "1490137779110285342";
+const GUILD_ID = "1477001067366584400";
+const CANAL_NOTIFICACAO = "1490147860560216064";
+
+const client = new Client({
+    intents: [GatewayIntentBits.Guilds]
+});
+
+let pedidos = {};
+
+// ❌ IPTV REMOVIDO
+const produtos = [
+    "Netflix","Disney+","Prime Video","HBO Max","Crunchyroll",
+    "Paramount+","Globoplay","YouTube Premium",
     "Globoplay+Premiere","Prime+Premiere","Telecine","Spotify"
 ];
 
+// ❌ IPTV REMOVIDO
 const emojis = {
     "Netflix": "🎬",
     "Disney+": "🏰",
@@ -40,7 +73,6 @@ const emojis = {
     "Crunchyroll": "🍥",
     "Paramount+": "⭐",
     "Globoplay": "📺",
-    "IPTV": "📡",
     "YouTube Premium": "▶️",
     "Globoplay+Premiere": "⚽",
     "Prime+Premiere": "🏆",
@@ -187,7 +219,7 @@ client.on(Events.InteractionCreate, async interaction => {
                 rows.push(row);
             }
 
-            // 🔥 ADICIONA NA ÚLTIMA LINHA
+            // 🗑️ ADICIONA NA ÚLTIMA LINHA (SUBSTITUI IPTV)
             if (rows.length > 0) {
                 rows[rows.length - 1].addComponents(
                     new ButtonBuilder()
