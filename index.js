@@ -33,7 +33,6 @@ const produtos = [
     "Globoplay+Premiere","Prime+Premiere","Telecine","Spotify"
 ];
 
-// ✅ IPTV DE VOLTA
 const emojis = {
     "Netflix": "🎬",
     "Disney+": "🏰",
@@ -83,6 +82,7 @@ client.on(Events.InteractionCreate, async interaction => {
         try {
             const id = interaction.customId;
 
+            // 🔥 AVISAR ESTOQUE COM EMBED BONITO
             if (id.startsWith("estoque_")) {
                 const produto = id.replace("estoque_", "");
 
@@ -93,7 +93,20 @@ client.on(Events.InteractionCreate, async interaction => {
                 for (const userId of pedidos[produto]) {
                     try {
                         const user = await client.users.fetch(userId);
-                        await user.send(`🔥 ${produto} voltou ao estoque!`);
+
+                        const embed = new EmbedBuilder()
+                            .setTitle("🔥 Produto de volta ao estoque!")
+                            .setDescription(`${produto} já está disponível novamente 🚀`)
+                            .addFields(
+                                { name: "📦 Produto", value: produto, inline: true },
+                                { name: "⚡ Status", value: "Disponível agora", inline: true }
+                            )
+                            .setColor("#00C853") // verde bonito
+                            .setTimestamp() // horário automático
+                            .setFooter({ text: "📌 Loja Central • Corre antes que acabe!" });
+
+                        await user.send({ embeds: [embed] });
+
                     } catch {}
                 }
 
@@ -102,6 +115,7 @@ client.on(Events.InteractionCreate, async interaction => {
                 return interaction.editReply(`✅ Todos foram avisados sobre ${produto}`);
             }
 
+            // 👇 USUÁRIO ENTRANDO NA LISTA
             const produto = id;
 
             if (!pedidos[produto]) pedidos[produto] = [];
@@ -150,12 +164,18 @@ client.on(Events.InteractionCreate, async interaction => {
             }
         }
 
+        // 🎯 PAINEL
         if (interaction.commandName === "painel") {
             await interaction.deferReply();
 
             const embed = new EmbedBuilder()
-                .setTitle("Peça seu produto")
-                .setDescription("Clique abaixo 👇")
+                .setTitle("Peça seu produto sem estoque")
+                .setDescription(
+`📦 Produtos sem estoque
+
+Clique abaixo para entrar na lista de espera 👇
+Você será avisado quando voltar!`
+                )
                 .setColor("#5865F2");
 
             const rows = [];
@@ -178,6 +198,7 @@ client.on(Events.InteractionCreate, async interaction => {
             await interaction.editReply({ embeds: [embed], components: rows });
         }
 
+        // 🔥 ADMIN
         if (interaction.commandName === "painel_admin") {
             await interaction.deferReply({ ephemeral: true });
 
