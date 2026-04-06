@@ -49,7 +49,7 @@ const emojis = {
     "Spotify": "🎵"
 };
 
-// 🔥 ADICIONADO /lixo
+// 🔥 COMANDOS
 const commands = [
     new SlashCommandBuilder().setName("painel").setDescription("Abrir painel de produtos"),
     new SlashCommandBuilder().setName("painel_admin").setDescription("Painel admin"),
@@ -60,11 +60,12 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
 
 (async () => {
     try {
+        // 🔥 GLOBAL (resolve o problema)
         await rest.put(
-            Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
+            Routes.applicationCommands(CLIENT_ID),
             { body: commands }
         );
-        console.log("✅ Comandos registrados");
+        console.log("✅ Comandos registrados GLOBAL");
     } catch (err) {
         console.error(err);
     }
@@ -81,22 +82,6 @@ client.on(Events.InteractionCreate, async interaction => {
 
         try {
             const id = interaction.customId;
-
-            // 🗑️ LIMPAR NOTIFICAÇÕES (botão antigo continua funcionando)
-            if (id === "limpar_notificacoes") {
-                const canal = await client.channels.fetch(CANAL_NOTIFICACAO);
-
-                const mensagens = await canal.messages.fetch({ limit: 100 });
-
-                const agora = Date.now();
-                const filtradas = mensagens.filter(msg =>
-                    (agora - msg.createdTimestamp) < 14 * 24 * 60 * 60 * 1000
-                );
-
-                await canal.bulkDelete(filtradas, true);
-
-                return interaction.editReply("✅ Notificações apagadas!");
-            }
 
             if (id.startsWith("estoque_")) {
                 const produto = id.replace("estoque_", "");
@@ -142,7 +127,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
     if (interaction.isChatInputCommand()) {
 
-        // 🗑️ NOVO COMANDO /lixo
+        // 🗑️ COMANDO /lixo
         if (interaction.commandName === "lixo") {
             await interaction.deferReply({ ephemeral: true });
 
