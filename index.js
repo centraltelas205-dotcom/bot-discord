@@ -26,37 +26,6 @@ const client = new Client({
 
 let pedidos = {};
 
-const produtos = [
-    "Netflix","Disney+","Prime Video","HBO Max","Crunchyroll",
-    "Paramount+","Globoplay","IPTV","YouTube Premium",
-const {
-    Client,
-    GatewayIntentBits,
-    ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle,
-    Events,
-    REST,
-    Routes,
-    SlashCommandBuilder,
-    EmbedBuilder
-} = require('discord.js');
-
-// ✅ TOKEN DO RAILWAY
-const TOKEN = process.env.TOKEN;
-
-console.log("TOKEN:", TOKEN);
-
-const CLIENT_ID = "1490137779110285342";
-const GUILD_ID = "1477001067366584400";
-const CANAL_NOTIFICACAO = "1490147860560216064";
-
-const client = new Client({
-    intents: [GatewayIntentBits.Guilds]
-});
-
-let pedidos = {};
-
 // ❌ IPTV REMOVIDO
 const produtos = [
     "Netflix","Disney+","Prime Video","HBO Max","Crunchyroll",
@@ -80,9 +49,11 @@ const emojis = {
     "Spotify": "🎵"
 };
 
+// 🔥 ADICIONADO /lixo
 const commands = [
     new SlashCommandBuilder().setName("painel").setDescription("Abrir painel de produtos"),
-    new SlashCommandBuilder().setName("painel_admin").setDescription("Painel admin")
+    new SlashCommandBuilder().setName("painel_admin").setDescription("Painel admin"),
+    new SlashCommandBuilder().setName("lixo").setDescription("Apagar notificações")
 ];
 
 const rest = new REST({ version: '10' }).setToken(TOKEN);
@@ -111,7 +82,7 @@ client.on(Events.InteractionCreate, async interaction => {
         try {
             const id = interaction.customId;
 
-            // 🗑️ LIMPAR NOTIFICAÇÕES
+            // 🗑️ LIMPAR NOTIFICAÇÕES (botão antigo continua funcionando)
             if (id === "limpar_notificacoes") {
                 const canal = await client.channels.fetch(CANAL_NOTIFICACAO);
 
@@ -171,6 +142,29 @@ client.on(Events.InteractionCreate, async interaction => {
 
     if (interaction.isChatInputCommand()) {
 
+        // 🗑️ NOVO COMANDO /lixo
+        if (interaction.commandName === "lixo") {
+            await interaction.deferReply({ ephemeral: true });
+
+            try {
+                const canal = await client.channels.fetch(CANAL_NOTIFICACAO);
+
+                const mensagens = await canal.messages.fetch({ limit: 100 });
+
+                const agora = Date.now();
+                const filtradas = mensagens.filter(msg =>
+                    (agora - msg.createdTimestamp) < 14 * 24 * 60 * 60 * 1000
+                );
+
+                await canal.bulkDelete(filtradas, true);
+
+                return interaction.editReply("🗑️ Notificações apagadas!");
+            } catch (err) {
+                console.error(err);
+                return interaction.editReply("❌ Erro ao apagar");
+            }
+        }
+
         if (interaction.commandName === "painel") {
             await interaction.deferReply();
 
@@ -217,16 +211,6 @@ client.on(Events.InteractionCreate, async interaction => {
                 });
 
                 rows.push(row);
-            }
-
-            // 🗑️ ADICIONA NA ÚLTIMA LINHA (SUBSTITUI IPTV)
-            if (rows.length > 0) {
-                rows[rows.length - 1].addComponents(
-                    new ButtonBuilder()
-                        .setCustomId("limpar_notificacoes")
-                        .setLabel("🗑️ Limpar")
-                        .setStyle(ButtonStyle.Danger)
-                );
             }
 
             await interaction.editReply({
