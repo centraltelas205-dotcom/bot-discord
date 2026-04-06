@@ -13,6 +13,7 @@ const {
 
 // ✅ TOKEN DO RAILWAY
 const TOKEN = process.env.TOKEN;
+
 // 🔍 DEBUG (pode apagar depois)
 console.log("TOKEN:", TOKEN);
 
@@ -84,6 +85,26 @@ client.on(Events.InteractionCreate, async interaction => {
         try {
             const id = interaction.customId;
 
+            // 🗑️ LIMPAR NOTIFICAÇÕES
+            if (id === "limpar_notificacoes") {
+                const canal = await client.channels.fetch(CANAL_NOTIFICACAO);
+
+                if (!canal) {
+                    return interaction.editReply("❌ Canal não encontrado");
+                }
+
+                const mensagens = await canal.messages.fetch({ limit: 100 });
+
+                const agora = Date.now();
+                const filtradas = mensagens.filter(msg => {
+                    return (agora - msg.createdTimestamp) < 14 * 24 * 60 * 60 * 1000;
+                });
+
+                await canal.bulkDelete(filtradas, true);
+
+                return interaction.editReply("✅ Notificações apagadas!");
+            }
+
             if (id.startsWith("estoque_")) {
                 const produto = id.replace("estoque_", "");
 
@@ -123,7 +144,6 @@ client.on(Events.InteractionCreate, async interaction => {
                 content: `✅ Você entrou na lista de ${produto}`
             });
 
-            // ✅ PROTEÇÃO PRA NÃO CRASHAR
             let canal;
             try {
                 canal = await client.channels.fetch(CANAL_NOTIFICACAO);
@@ -194,8 +214,18 @@ client.on(Events.InteractionCreate, async interaction => {
                 rows.push(row);
             }
 
+            // 🔥 BOTÃO DE LIMPAR
+            const rowLimpar = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId("limpar_notificacoes")
+                    .setLabel("🗑️ Limpar notificações")
+                    .setStyle(ButtonStyle.Danger)
+            );
+
+            rows.push(rowLimpar);
+
             await interaction.editReply({
-                content: "🔥 Clique para avisar estoque:",
+                content: "🔥 Clique para avisar estoque ou limpar:",
                 components: rows
             });
         }
