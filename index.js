@@ -26,14 +26,14 @@ const client = new Client({
 
 let pedidos = {};
 
-// ❌ IPTV REMOVIDO
+// ✅ IPTV DE VOLTA
 const produtos = [
     "Netflix","Disney+","Prime Video","HBO Max","Crunchyroll",
-    "Paramount+","Globoplay","YouTube Premium",
+    "Paramount+","Globoplay","IPTV","YouTube Premium",
     "Globoplay+Premiere","Prime+Premiere","Telecine","Spotify"
 ];
 
-// ❌ IPTV REMOVIDO
+// ✅ IPTV DE VOLTA
 const emojis = {
     "Netflix": "🎬",
     "Disney+": "🏰",
@@ -42,6 +42,7 @@ const emojis = {
     "Crunchyroll": "🍥",
     "Paramount+": "⭐",
     "Globoplay": "📺",
+    "IPTV": "📡",
     "YouTube Premium": "▶️",
     "Globoplay+Premiere": "⚽",
     "Prime+Premiere": "🏆",
@@ -60,7 +61,6 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
 
 (async () => {
     try {
-        // 🔥 GLOBAL (resolve o problema)
         await rest.put(
             Routes.applicationCommands(CLIENT_ID),
             { body: commands }
@@ -127,7 +127,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
     if (interaction.isChatInputCommand()) {
 
-        // 🗑️ COMANDO /lixo
+        // 🗑️ /lixo
         if (interaction.commandName === "lixo") {
             await interaction.deferReply({ ephemeral: true });
 
