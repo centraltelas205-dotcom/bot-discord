@@ -14,7 +14,6 @@ const {
 // ✅ TOKEN DO RAILWAY
 const TOKEN = process.env.TOKEN;
 
-// 🔍 DEBUG (pode apagar depois)
 console.log("TOKEN:", TOKEN);
 
 const CLIENT_ID = "1490137779110285342";
@@ -50,13 +49,8 @@ const emojis = {
 };
 
 const commands = [
-    new SlashCommandBuilder()
-        .setName("painel")
-        .setDescription("Abrir painel de produtos"),
-
-    new SlashCommandBuilder()
-        .setName("painel_admin")
-        .setDescription("Painel para avisar estoque")
+    new SlashCommandBuilder().setName("painel").setDescription("Abrir painel de produtos"),
+    new SlashCommandBuilder().setName("painel_admin").setDescription("Painel admin")
 ];
 
 const rest = new REST({ version: '10' }).setToken(TOKEN);
@@ -89,16 +83,12 @@ client.on(Events.InteractionCreate, async interaction => {
             if (id === "limpar_notificacoes") {
                 const canal = await client.channels.fetch(CANAL_NOTIFICACAO);
 
-                if (!canal) {
-                    return interaction.editReply("❌ Canal não encontrado");
-                }
-
                 const mensagens = await canal.messages.fetch({ limit: 100 });
 
                 const agora = Date.now();
-                const filtradas = mensagens.filter(msg => {
-                    return (agora - msg.createdTimestamp) < 14 * 24 * 60 * 60 * 1000;
-                });
+                const filtradas = mensagens.filter(msg =>
+                    (agora - msg.createdTimestamp) < 14 * 24 * 60 * 60 * 1000
+                );
 
                 await canal.bulkDelete(filtradas, true);
 
@@ -109,9 +99,7 @@ client.on(Events.InteractionCreate, async interaction => {
                 const produto = id.replace("estoque_", "");
 
                 if (!pedidos[produto] || pedidos[produto].length === 0) {
-                    return await interaction.editReply({
-                        content: `❌ Ninguém pediu ${produto}`
-                    });
+                    return interaction.editReply(`❌ Ninguém pediu ${produto}`);
                 }
 
                 for (const userId of pedidos[produto]) {
@@ -123,9 +111,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
                 pedidos[produto] = [];
 
-                return await interaction.editReply({
-                    content: `✅ Todos foram avisados sobre ${produto}`
-                });
+                return interaction.editReply(`✅ Todos foram avisados sobre ${produto}`);
             }
 
             const produto = id;
@@ -133,31 +119,21 @@ client.on(Events.InteractionCreate, async interaction => {
             if (!pedidos[produto]) pedidos[produto] = [];
 
             if (pedidos[produto].includes(interaction.user.id)) {
-                return await interaction.editReply({
-                    content: `⚠️ Você já está na lista de ${produto}`
-                });
+                return interaction.editReply(`⚠️ Você já está na lista de ${produto}`);
             }
 
             pedidos[produto].push(interaction.user.id);
 
-            await interaction.editReply({
-                content: `✅ Você entrou na lista de ${produto}`
-            });
+            await interaction.editReply(`✅ Você entrou na lista de ${produto}`);
 
-            let canal;
-            try {
-                canal = await client.channels.fetch(CANAL_NOTIFICACAO);
-            } catch (e) {
-                console.log("Erro ao buscar canal:", e);
-            }
-
+            const canal = await client.channels.fetch(CANAL_NOTIFICACAO);
             if (canal) {
                 await canal.send(`📢 Novo pedido!\n👤 ${interaction.user.tag}\n📦 ${produto}`);
             }
 
         } catch (error) {
             console.error(error);
-            await interaction.editReply({ content: "❌ Erro" });
+            await interaction.editReply("❌ Erro");
         }
     }
 
@@ -167,8 +143,8 @@ client.on(Events.InteractionCreate, async interaction => {
             await interaction.deferReply();
 
             const embed = new EmbedBuilder()
-                .setTitle("Peça seu produto sem estoque")
-                .setDescription("📦 Produtos sem estoque\n\nClique abaixo 👇")
+                .setTitle("Peça seu produto")
+                .setDescription("Clique abaixo 👇")
                 .setColor("#5865F2");
 
             const rows = [];
@@ -180,7 +156,7 @@ client.on(Events.InteractionCreate, async interaction => {
                     row.addComponents(
                         new ButtonBuilder()
                             .setCustomId(produto)
-                            .setLabel(`${emojis[produto] || "📺"} ${produto}`)
+                            .setLabel(`${emojis[produto]} ${produto}`)
                             .setStyle(ButtonStyle.Primary)
                     );
                 });
@@ -188,10 +164,7 @@ client.on(Events.InteractionCreate, async interaction => {
                 rows.push(row);
             }
 
-            await interaction.editReply({
-                embeds: [embed],
-                components: rows
-            });
+            await interaction.editReply({ embeds: [embed], components: rows });
         }
 
         if (interaction.commandName === "painel_admin") {
@@ -214,18 +187,18 @@ client.on(Events.InteractionCreate, async interaction => {
                 rows.push(row);
             }
 
-            // 🔥 BOTÃO DE LIMPAR
-            const rowLimpar = new ActionRowBuilder().addComponents(
-                new ButtonBuilder()
-                    .setCustomId("limpar_notificacoes")
-                    .setLabel("🗑️ Limpar notificações")
-                    .setStyle(ButtonStyle.Danger)
-            );
-
-            rows.push(rowLimpar);
+            // 🔥 ADICIONA NA ÚLTIMA LINHA
+            if (rows.length > 0) {
+                rows[rows.length - 1].addComponents(
+                    new ButtonBuilder()
+                        .setCustomId("limpar_notificacoes")
+                        .setLabel("🗑️ Limpar")
+                        .setStyle(ButtonStyle.Danger)
+                );
+            }
 
             await interaction.editReply({
-                content: "🔥 Clique para avisar estoque ou limpar:",
+                content: "🔥 Painel admin:",
                 components: rows
             });
         }
