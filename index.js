@@ -12,8 +12,7 @@ const {
 } = require('discord.js');
 
 // ✅ TOKEN DO RAILWAY
-const TOKEN = process.env.TOKEN;
-
+const TOKEN = "MTQ5MDEzNzc3OTExMDI4NTM0Mg.GO7KDm.W8nIvNB65klSrm7HUfnf6ioMidkKF6AVLnC5dA";
 // 🔍 DEBUG (pode apagar depois)
 console.log("TOKEN:", TOKEN);
 
