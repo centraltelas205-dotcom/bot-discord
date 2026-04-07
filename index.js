@@ -101,8 +101,8 @@ client.on(Events.InteractionCreate, async interaction => {
                                 { name: "📦 Produto", value: produto, inline: true },
                                 { name: "⚡ Status", value: "Disponível agora", inline: true }
                             )
-                            .setColor("#00C853") // verde bonito
-                            .setTimestamp() // horário automático
+                            .setColor("#00C853")
+                            .setTimestamp()
                             .setFooter({ text: "📌 Loja Central • Corre antes que acabe!" });
 
                         await user.send({ embeds: [embed] });
@@ -141,7 +141,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
     if (interaction.isChatInputCommand()) {
 
-        // 🗑️ /lixo
+        // 🗑️ /lixo MELHORADO
         if (interaction.commandName === "lixo") {
             await interaction.deferReply({ ephemeral: true });
 
@@ -155,12 +155,16 @@ client.on(Events.InteractionCreate, async interaction => {
                     (agora - msg.createdTimestamp) < 14 * 24 * 60 * 60 * 1000
                 );
 
+                const quantidade = filtradas.size;
+
                 await canal.bulkDelete(filtradas, true);
 
-                return interaction.editReply("🗑️ Notificações apagadas!");
+                return interaction.editReply(
+                    `🗑️ Limpeza concluída!\n\n📦 ${quantidade} mensagens apagadas com sucesso.`
+                );
             } catch (err) {
                 console.error(err);
-                return interaction.editReply("❌ Erro ao apagar");
+                return interaction.editReply("❌ Erro ao apagar notificações");
             }
         }
 
