@@ -61,10 +61,10 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
 (async () => {
     try {
         await rest.put(
-            Routes.applicationCommands(CLIENT_ID),
+            Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
             { body: commands }
         );
-        console.log("✅ Comandos registrados GLOBAL");
+        console.log("✅ Comandos registrados GUILD");
     } catch (err) {
         console.error(err);
     }
