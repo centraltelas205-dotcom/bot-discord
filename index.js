@@ -115,7 +115,6 @@ client.on(Events.InteractionCreate, async interaction => {
                 return interaction.editReply(`✅ Todos foram avisados sobre ${produto}`);
             }
 
-            // 👇 USUÁRIO ENTRANDO NA LISTA
             const produto = id;
 
             if (!pedidos[produto]) pedidos[produto] = [];
@@ -141,7 +140,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
     if (interaction.isChatInputCommand()) {
 
-        // 🗑️ /lixo MELHORADO
+        // 🗑️ /lixo CORRIGIDO
         if (interaction.commandName === "lixo") {
             await interaction.deferReply({ ephemeral: true });
 
@@ -151,17 +150,23 @@ client.on(Events.InteractionCreate, async interaction => {
                 const mensagens = await canal.messages.fetch({ limit: 100 });
 
                 const agora = Date.now();
-                const filtradas = mensagens.filter(msg =>
+
+                const deletaveis = mensagens.filter(msg =>
                     (agora - msg.createdTimestamp) < 14 * 24 * 60 * 60 * 1000
                 );
 
-                const quantidade = filtradas.size;
+                const quantidade = deletaveis.size;
 
-                await canal.bulkDelete(filtradas, true);
+                if (quantidade === 0) {
+                    return interaction.editReply("⚠️ Nenhuma mensagem para apagar.");
+                }
+
+                await canal.bulkDelete(quantidade, true);
 
                 return interaction.editReply(
                     `🗑️ Limpeza concluída!\n\n📦 ${quantidade} mensagens apagadas com sucesso.`
                 );
+
             } catch (err) {
                 console.error(err);
                 return interaction.editReply("❌ Erro ao apagar notificações");
