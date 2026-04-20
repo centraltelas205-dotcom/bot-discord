@@ -1,78 +1,11 @@
-const {
-    Client,
-    GatewayIntentBits,
-    ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle,
-    Events,
-    REST,
-    Routes,
-    SlashCommandBuilder,
-    EmbedBuilder,
-    PermissionsBitField,
-    ChannelType
-} = require('discord.js');
-
-const TOKEN = process.env.TOKEN;
-
-const CLIENT_ID = "1490137779110285342";
-const GUILD_ID = "1477001067366584400";
-const CANAL_NOTIFICACAO = "1490147860560216064";
-
-const CATEGORIA_TICKETS = "1495879919258042600";
-const CARGO_ADMIN = "1477086255136243898";
-
-const client = new Client({
-    intents: [GatewayIntentBits.Guilds]
-});
-
-let pedidos = {};
-
-const produtos = [
-    "Netflix","Disney+","Prime Video","HBO Max","Crunchyroll",
-    "Paramount+","Globoplay","IPTV","YouTube Premium",
-    "Globoplay+Premiere","Prime+Premiere","Telecine","Spotify"
-];
-
-const emojis = {
-    "Netflix": "🎬","Disney+": "🏰","Prime Video": "📦","HBO Max": "🎥",
-    "Crunchyroll": "🍥","Paramount+": "⭐","Globoplay": "📺","IPTV": "📡",
-    "YouTube Premium": "▶️","Globoplay+Premiere": "⚽",
-    "Prime+Premiere": "🏆","Telecine": "🎞️","Spotify": "🎵"
-};
-
-// COMANDOS
-const commands = [
-    new SlashCommandBuilder().setName("painel").setDescription("Abrir painel"),
-    new SlashCommandBuilder().setName("painel_admin").setDescription("Admin"),
-    new SlashCommandBuilder().setName("lixo").setDescription("Limpar notificações"),
-    new SlashCommandBuilder().setName("comprar").setDescription("Abrir ticket")
-];
-
-const rest = new REST({ version: '10' }).setToken(TOKEN);
-
-(async () => {
-    try {
-        await rest.put(
-            Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
-            { body: commands }
-        );
-        console.log("✅ Comandos registrados");
-    } catch (err) {
-        console.error(err);
-    }
-})();
-
-client.once('ready', () => {
-    console.log(`✅ Bot online como ${client.user.tag}`);
-});
-
 client.on(Events.InteractionCreate, async interaction => {
 
     try {
 
         // ================= BOTÕES =================
         if (interaction.isButton()) {
+
+            await interaction.deferReply({ ephemeral: true }); // 🔥 ESSENCIAL
 
             const id = interaction.customId;
 
@@ -84,7 +17,7 @@ client.on(Events.InteractionCreate, async interaction => {
                 );
 
                 if (existente) {
-                    return interaction.reply({ content: "⚠️ Você já tem um ticket aberto!", ephemeral: true });
+                    return interaction.editReply("⚠️ Você já tem um ticket aberto!");
                 }
 
                 const canal = await interaction.guild.channels.create({
@@ -113,17 +46,17 @@ client.on(Events.InteractionCreate, async interaction => {
                     components: [new ActionRowBuilder().addComponents(fechar)]
                 });
 
-                return interaction.reply({ content: "✅ Ticket criado!", ephemeral: true });
+                return interaction.editReply("✅ Ticket criado!");
             }
 
             // 🔒 FECHAR TICKET
             if (id === "fechar_ticket") {
 
                 if (!interaction.member.roles.cache.has(CARGO_ADMIN)) {
-                    return interaction.reply({ content: "❌ Apenas administradores!", ephemeral: true });
+                    return interaction.editReply("❌ Apenas administradores!");
                 }
 
-                await interaction.reply("🔒 Fechando em 3s...");
+                await interaction.editReply("🔒 Fechando em 3s...");
 
                 setTimeout(() => {
                     interaction.channel.delete().catch(() => {});
@@ -136,13 +69,13 @@ client.on(Events.InteractionCreate, async interaction => {
             if (id.startsWith("estoque_")) {
 
                 if (!interaction.member.roles.cache.has(CARGO_ADMIN)) {
-                    return interaction.reply({ content: "❌ Apenas admin!", ephemeral: true });
+                    return interaction.editReply("❌ Apenas admin!");
                 }
 
                 const produto = id.replace("estoque_", "");
 
                 if (!pedidos[produto] || pedidos[produto].length === 0) {
-                    return interaction.reply({ content: "⚠️ Ninguém pediu esse produto.", ephemeral: true });
+                    return interaction.editReply("⚠️ Ninguém pediu esse produto.");
                 }
 
                 for (const userId of pedidos[produto]) {
@@ -160,10 +93,10 @@ client.on(Events.InteractionCreate, async interaction => {
 
                 pedidos[produto] = [];
 
-                return interaction.reply({ content: "✅ Todos foram avisados!", ephemeral: true });
+                return interaction.editReply("✅ Todos foram avisados!");
             }
 
-            // 📦 LISTA DE ESPERA (CORRIGIDO)
+            // 📦 LISTA
             if (produtos.includes(id)) {
 
                 const produto = id;
@@ -171,7 +104,7 @@ client.on(Events.InteractionCreate, async interaction => {
                 if (!pedidos[produto]) pedidos[produto] = [];
 
                 if (pedidos[produto].includes(interaction.user.id)) {
-                    return interaction.reply({ content: "⚠️ Você já está na lista!", ephemeral: true });
+                    return interaction.editReply("⚠️ Você já está na lista!");
                 }
 
                 pedidos[produto].push(interaction.user.id);
@@ -181,10 +114,7 @@ client.on(Events.InteractionCreate, async interaction => {
                     canal.send(`📢 ${interaction.user.tag} pediu ${produto}`);
                 }
 
-                return interaction.reply({
-                    content: `✅ Você entrou na lista de ${produto}`,
-                    ephemeral: true
-                });
+                return interaction.editReply(`✅ Você entrou na lista de ${produto}`);
             }
         }
 
@@ -236,7 +166,7 @@ client.on(Events.InteractionCreate, async interaction => {
                 });
             }
 
-            // 🔥 PAINEL ADMIN (CORRIGIDO)
+            // 🔥 PAINEL ADMIN
             if (interaction.commandName === "painel_admin") {
 
                 if (!interaction.member.roles.cache.has(CARGO_ADMIN)) {
@@ -270,7 +200,7 @@ client.on(Events.InteractionCreate, async interaction => {
                 });
             }
 
-            // 🗑️ LIXO (CORRIGIDO)
+            // 🗑️ LIXO
             if (interaction.commandName === "lixo") {
 
                 if (!interaction.member.roles.cache.has(CARGO_ADMIN)) {
@@ -297,5 +227,3 @@ client.on(Events.InteractionCreate, async interaction => {
     }
 
 });
-
-client.login(TOKEN);
