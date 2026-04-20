@@ -8,17 +8,19 @@ const {
     REST,
     Routes,
     SlashCommandBuilder,
-    EmbedBuilder
+    EmbedBuilder,
+    PermissionsBitField,
+    ChannelType
 } = require('discord.js');
 
-// ✅ TOKEN DO RAILWAY
 const TOKEN = process.env.TOKEN;
-
-console.log("TOKEN:", TOKEN);
 
 const CLIENT_ID = "1490137779110285342";
 const GUILD_ID = "1477001067366584400";
 const CANAL_NOTIFICACAO = "1490147860560216064";
+
+const CATEGORIA_TICKETS = "1495879919258042600";
+const CARGO_ADMIN = "1477086255136243898";
 
 const client = new Client({
     intents: [GatewayIntentBits.Guilds]
@@ -26,7 +28,6 @@ const client = new Client({
 
 let pedidos = {};
 
-// ✅ IPTV DE VOLTA
 const produtos = [
     "Netflix","Disney+","Prime Video","HBO Max","Crunchyroll",
     "Paramount+","Globoplay","IPTV","YouTube Premium",
@@ -34,26 +35,18 @@ const produtos = [
 ];
 
 const emojis = {
-    "Netflix": "🎬",
-    "Disney+": "🏰",
-    "Prime Video": "📦",
-    "HBO Max": "🎥",
-    "Crunchyroll": "🍥",
-    "Paramount+": "⭐",
-    "Globoplay": "📺",
-    "IPTV": "📡",
-    "YouTube Premium": "▶️",
-    "Globoplay+Premiere": "⚽",
-    "Prime+Premiere": "🏆",
-    "Telecine": "🎞️",
-    "Spotify": "🎵"
+    "Netflix": "🎬","Disney+": "🏰","Prime Video": "📦","HBO Max": "🎥",
+    "Crunchyroll": "🍥","Paramount+": "⭐","Globoplay": "📺","IPTV": "📡",
+    "YouTube Premium": "▶️","Globoplay+Premiere": "⚽",
+    "Prime+Premiere": "🏆","Telecine": "🎞️","Spotify": "🎵"
 };
 
-// 🔥 COMANDOS
+// COMANDOS
 const commands = [
-    new SlashCommandBuilder().setName("painel").setDescription("Abrir painel de produtos"),
-    new SlashCommandBuilder().setName("painel_admin").setDescription("Painel admin"),
-    new SlashCommandBuilder().setName("lixo").setDescription("Apagar notificações")
+    new SlashCommandBuilder().setName("painel").setDescription("Abrir painel"),
+    new SlashCommandBuilder().setName("painel_admin").setDescription("Admin"),
+    new SlashCommandBuilder().setName("lixo").setDescription("Limpar notificações"),
+    new SlashCommandBuilder().setName("comprar").setDescription("Abrir ticket")
 ];
 
 const rest = new REST({ version: '10' }).setToken(TOKEN);
@@ -64,30 +57,92 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
             Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
             { body: commands }
         );
-        console.log("✅ Comandos registrados GUILD");
+        console.log("✅ Comandos registrados");
     } catch (err) {
         console.error(err);
     }
 })();
 
 client.once('ready', () => {
-    console.log(`🔥 Bot online como ${client.user.tag}`);
+    console.log(`✅ Bot online como ${client.user.tag}`);
 });
 
 client.on(Events.InteractionCreate, async interaction => {
 
-    if (interaction.isButton()) {
-        await interaction.deferReply({ ephemeral: true });
+    try {
 
-        try {
+        // ================= BOTÕES =================
+        if (interaction.isButton()) {
+
             const id = interaction.customId;
 
-            // 🔥 AVISAR ESTOQUE COM EMBED BONITO
+            // 🎫 ABRIR TICKET
+            if (id === "abrir_ticket") {
+
+                const existente = interaction.guild.channels.cache.find(c =>
+                    c.name === `ticket-${interaction.user.id}`
+                );
+
+                if (existente) {
+                    return interaction.reply({ content: "⚠️ Você já tem um ticket aberto!", ephemeral: true });
+                }
+
+                const canal = await interaction.guild.channels.create({
+                    name: `ticket-${interaction.user.username}`,
+                    type: ChannelType.GuildText,
+                    parent: CATEGORIA_TICKETS,
+                    permissionOverwrites: [
+                        { id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
+                        { id: interaction.user.id, allow: [PermissionsBitField.Flags.ViewChannel] },
+                        { id: CARGO_ADMIN, allow: [PermissionsBitField.Flags.ViewChannel] }
+                    ]
+                });
+
+                const embed = new EmbedBuilder()
+                    .setTitle("🎫 𝑻𝑰𝑪𝑲𝑬𝑻 𝑪𝑶𝑴𝑷𝑹𝑨")
+                    .setDescription(`Olá ${interaction.user}, descreva seu pedido.`)
+                    .setColor("Blue");
+
+                const fechar = new ButtonBuilder()
+                    .setCustomId("fechar_ticket")
+                    .setLabel("🔒 Fechar Ticket")
+                    .setStyle(ButtonStyle.Danger);
+
+                await canal.send({
+                    embeds: [embed],
+                    components: [new ActionRowBuilder().addComponents(fechar)]
+                });
+
+                return interaction.reply({ content: "✅ Ticket criado!", ephemeral: true });
+            }
+
+            // 🔒 FECHAR TICKET
+            if (id === "fechar_ticket") {
+
+                if (!interaction.member.roles.cache.has(CARGO_ADMIN)) {
+                    return interaction.reply({ content: "❌ Apenas administradores!", ephemeral: true });
+                }
+
+                await interaction.reply("🔒 Fechando em 3s...");
+
+                setTimeout(() => {
+                    interaction.channel.delete().catch(() => {});
+                }, 3000);
+
+                return;
+            }
+
+            // 🔔 AVISO ESTOQUE
             if (id.startsWith("estoque_")) {
+
+                if (!interaction.member.roles.cache.has(CARGO_ADMIN)) {
+                    return interaction.reply({ content: "❌ Apenas admin!", ephemeral: true });
+                }
+
                 const produto = id.replace("estoque_", "");
 
                 if (!pedidos[produto] || pedidos[produto].length === 0) {
-                    return interaction.editReply(`❌ Ninguém pediu ${produto}`);
+                    return interaction.reply({ content: "⚠️ Ninguém pediu esse produto.", ephemeral: true });
                 }
 
                 for (const userId of pedidos[produto]) {
@@ -95,145 +150,152 @@ client.on(Events.InteractionCreate, async interaction => {
                         const user = await client.users.fetch(userId);
 
                         const embed = new EmbedBuilder()
-                            .setTitle("🔥 Produto de volta ao estoque!")
-                            .setDescription(`${produto} já está disponível novamente 🚀`)
-                            .addFields(
-                                { name: "📦 Produto", value: produto, inline: true },
-                                { name: "⚡ Status", value: "Disponível agora", inline: true }
-                            )
-                            .setColor("#00C853")
-                            .setTimestamp()
-                            .setFooter({ text: "📌 Loja Central • Corre antes que acabe!" });
+                            .setTitle("🔥 Produto disponível!")
+                            .setDescription(`${produto} voltou ao estoque 🚀`)
+                            .setColor("Green");
 
                         await user.send({ embeds: [embed] });
-
                     } catch {}
                 }
 
                 pedidos[produto] = [];
 
-                return interaction.editReply(`✅ Todos foram avisados sobre ${produto}`);
+                return interaction.reply({ content: "✅ Todos foram avisados!", ephemeral: true });
             }
 
-            const produto = id;
+            // 📦 LISTA DE ESPERA (CORRIGIDO)
+            if (produtos.includes(id)) {
 
-            if (!pedidos[produto]) pedidos[produto] = [];
+                const produto = id;
 
-            if (pedidos[produto].includes(interaction.user.id)) {
-                return interaction.editReply(`⚠️ Você já está na lista de ${produto}`);
-            }
+                if (!pedidos[produto]) pedidos[produto] = [];
 
-            pedidos[produto].push(interaction.user.id);
-
-            await interaction.editReply(`✅ Você entrou na lista de ${produto}`);
-
-            const canal = await client.channels.fetch(CANAL_NOTIFICACAO);
-            if (canal) {
-                await canal.send(`📢 Novo pedido!\n👤 ${interaction.user.tag}\n📦 ${produto}`);
-            }
-
-        } catch (error) {
-            console.error(error);
-            await interaction.editReply("❌ Erro");
-        }
-    }
-
-    if (interaction.isChatInputCommand()) {
-
-        // 🗑️ /lixo CORRIGIDO
-        if (interaction.commandName === "lixo") {
-            await interaction.deferReply({ ephemeral: true });
-
-            try {
-                const canal = await client.channels.fetch(CANAL_NOTIFICACAO);
-
-                const mensagens = await canal.messages.fetch({ limit: 100 });
-
-                const agora = Date.now();
-
-                const deletaveis = mensagens.filter(msg =>
-                    (agora - msg.createdTimestamp) < 14 * 24 * 60 * 60 * 1000
-                );
-
-                const quantidade = deletaveis.size;
-
-                if (quantidade === 0) {
-                    return interaction.editReply("⚠️ Nenhuma mensagem para apagar.");
+                if (pedidos[produto].includes(interaction.user.id)) {
+                    return interaction.reply({ content: "⚠️ Você já está na lista!", ephemeral: true });
                 }
 
-                await canal.bulkDelete(quantidade, true);
+                pedidos[produto].push(interaction.user.id);
 
-                return interaction.editReply(
-                    `🗑️ Limpeza concluída!\n\n📦 ${quantidade} mensagens apagadas com sucesso.`
-                );
+                const canal = await client.channels.fetch(CANAL_NOTIFICACAO);
+                if (canal) {
+                    canal.send(`📢 ${interaction.user.tag} pediu ${produto}`);
+                }
 
-            } catch (err) {
-                console.error(err);
-                return interaction.editReply("❌ Erro ao apagar notificações");
-            }
-        }
-
-        // 🎯 PAINEL
-        if (interaction.commandName === "painel") {
-            await interaction.deferReply();
-
-            const embed = new EmbedBuilder()
-                .setTitle("Peça seu produto sem estoque")
-                .setDescription(
-`📦 Produtos sem estoque
-
-Clique abaixo para entrar na lista de espera 👇
-Você será avisado quando voltar!`
-                )
-                .setColor("#5865F2");
-
-            const rows = [];
-
-            for (let i = 0; i < produtos.length; i += 5) {
-                const row = new ActionRowBuilder();
-
-                produtos.slice(i, i + 5).forEach(produto => {
-                    row.addComponents(
-                        new ButtonBuilder()
-                            .setCustomId(produto)
-                            .setLabel(`${emojis[produto]} ${produto}`)
-                            .setStyle(ButtonStyle.Primary)
-                    );
+                return interaction.reply({
+                    content: `✅ Você entrou na lista de ${produto}`,
+                    ephemeral: true
                 });
-
-                rows.push(row);
             }
-
-            await interaction.editReply({ embeds: [embed], components: rows });
         }
 
-        // 🔥 ADMIN
-        if (interaction.commandName === "painel_admin") {
-            await interaction.deferReply({ ephemeral: true });
+        // ================= COMANDOS =================
+        if (interaction.isChatInputCommand()) {
 
-            const rows = [];
+            // 🛒 COMPRAR
+            if (interaction.commandName === "comprar") {
 
-            for (let i = 0; i < produtos.length; i += 5) {
-                const row = new ActionRowBuilder();
+                const embed = new EmbedBuilder()
+                    .setTitle("🛒 𝑻𝑰𝑪𝑲𝑬𝑻 𝑪𝑶𝑴𝑷𝑹𝑨")
+                    .setDescription("Clique abaixo para iniciar sua compra")
+                    .setColor("Green");
 
-                produtos.slice(i, i + 5).forEach(produto => {
-                    row.addComponents(
-                        new ButtonBuilder()
-                            .setCustomId(`estoque_${produto}`)
-                            .setLabel(`🔥 ${produto}`)
-                            .setStyle(ButtonStyle.Success)
-                    );
+                const botao = new ButtonBuilder()
+                    .setCustomId("abrir_ticket")
+                    .setLabel("🛒 Comprar")
+                    .setStyle(ButtonStyle.Success);
+
+                return interaction.reply({
+                    embeds: [embed],
+                    components: [new ActionRowBuilder().addComponents(botao)]
                 });
-
-                rows.push(row);
             }
 
-            await interaction.editReply({
-                content: "🔥 Painel admin:",
-                components: rows
-            });
+            // 📦 PAINEL
+            if (interaction.commandName === "painel") {
+
+                const rows = [];
+
+                for (let i = 0; i < produtos.length; i += 5) {
+                    const row = new ActionRowBuilder();
+
+                    produtos.slice(i, i + 5).forEach(p => {
+                        row.addComponents(
+                            new ButtonBuilder()
+                                .setCustomId(p)
+                                .setLabel(`${emojis[p]} ${p}`)
+                                .setStyle(ButtonStyle.Primary)
+                        );
+                    });
+
+                    rows.push(row);
+                }
+
+                return interaction.reply({
+                    content: "📦 Produtos sem estoque:",
+                    components: rows
+                });
+            }
+
+            // 🔥 PAINEL ADMIN (CORRIGIDO)
+            if (interaction.commandName === "painel_admin") {
+
+                if (!interaction.member.roles.cache.has(CARGO_ADMIN)) {
+                    return interaction.reply({
+                        content: "❌ Apenas administradores!",
+                        ephemeral: true
+                    });
+                }
+
+                const rows = [];
+
+                for (let i = 0; i < produtos.length; i += 5) {
+                    const row = new ActionRowBuilder();
+
+                    produtos.slice(i, i + 5).forEach(p => {
+                        row.addComponents(
+                            new ButtonBuilder()
+                                .setCustomId(`estoque_${p}`)
+                                .setLabel(`🔥 ${p}`)
+                                .setStyle(ButtonStyle.Success)
+                        );
+                    });
+
+                    rows.push(row);
+                }
+
+                return interaction.reply({
+                    content: "🔥 Painel admin:",
+                    components: rows,
+                    ephemeral: true
+                });
+            }
+
+            // 🗑️ LIXO (CORRIGIDO)
+            if (interaction.commandName === "lixo") {
+
+                if (!interaction.member.roles.cache.has(CARGO_ADMIN)) {
+                    return interaction.reply({
+                        content: "❌ Apenas admin!",
+                        ephemeral: true
+                    });
+                }
+
+                const canal = await client.channels.fetch(CANAL_NOTIFICACAO);
+                const msgs = await canal.messages.fetch({ limit: 100 });
+
+                await canal.bulkDelete(msgs, true).catch(() => {});
+
+                return interaction.reply({
+                    content: "🗑️ Notificações apagadas!",
+                    ephemeral: true
+                });
+            }
         }
+
+    } catch (err) {
+        console.error("ERRO:", err);
     }
+
 });
 
 client.login(TOKEN);
