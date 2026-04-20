@@ -1,92 +1,106 @@
 if (interaction.isButton()) {
 
-    const id = interaction.customId;
+    try {
 
-    // 👇 RESPONDE IMEDIATO (sem quebrar)
-    await interaction.deferReply({ ephemeral: true });
+        await interaction.deferReply({ ephemeral: true });
 
-    // pega membro atualizado
-    const member = await interaction.guild.members.fetch(interaction.user.id);
+        const id = interaction.customId;
 
-    // 🎫 ABRIR TICKET
-    if (id === "abrir_ticket") {
-
-        const existente = interaction.guild.channels.cache.find(c =>
-            c.name === `ticket-${interaction.user.id}`
-        );
-
-        if (existente) {
-            return interaction.editReply("⚠️ Você já tem um ticket aberto!");
+        // pega membro seguro
+        let member;
+        try {
+            member = await interaction.guild.members.fetch(interaction.user.id);
+        } catch {
+            return interaction.editReply("❌ Erro ao identificar usuário.");
         }
 
-        const canal = await interaction.guild.channels.create({
-            name: `ticket-${interaction.user.username}`,
-            type: ChannelType.GuildText,
-            parent: CATEGORIA_TICKETS,
-            permissionOverwrites: [
-                { id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
-                { id: interaction.user.id, allow: [PermissionsBitField.Flags.ViewChannel] },
-                { id: CARGO_ADMIN, allow: [PermissionsBitField.Flags.ViewChannel] }
-            ]
-        });
+        // 🎫 ABRIR TICKET
+        if (id === "abrir_ticket") {
 
-        await canal.send(`🎫 ${interaction.user}, descreva seu pedido.`);
+            const existente = interaction.guild.channels.cache.find(c =>
+                c.name === `ticket-${interaction.user.id}`
+            );
 
-        return interaction.editReply("✅ Ticket criado!");
-    }
+            if (existente) {
+                return interaction.editReply("⚠️ Você já tem um ticket aberto!");
+            }
 
-    // 🔒 FECHAR
-    if (id === "fechar_ticket") {
+            const canal = await interaction.guild.channels.create({
+                name: `ticket-${interaction.user.username}`,
+                type: ChannelType.GuildText,
+                parent: CATEGORIA_TICKETS,
+                permissionOverwrites: [
+                    { id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
+                    { id: interaction.user.id, allow: [PermissionsBitField.Flags.ViewChannel] },
+                    { id: CARGO_ADMIN, allow: [PermissionsBitField.Flags.ViewChannel] }
+                ]
+            });
 
-        if (!member.roles.cache.has(CARGO_ADMIN)) {
-            return interaction.editReply("❌ Apenas admin!");
+            await canal.send(`🎫 ${interaction.user}, descreva seu pedido.`);
+
+            return interaction.editReply("✅ Ticket criado!");
         }
 
-        await interaction.editReply("🔒 Fechando...");
+        // 🔒 FECHAR
+        if (id === "fechar_ticket") {
 
-        setTimeout(() => {
-            interaction.channel.delete().catch(() => {});
-        }, 3000);
+            if (!member.roles.cache.has(CARGO_ADMIN)) {
+                return interaction.editReply("❌ Apenas admin!");
+            }
 
-        return;
-    }
+            await interaction.editReply("🔒 Fechando...");
 
-    // 🔔 ESTOQUE
-    if (id.startsWith("estoque_")) {
+            setTimeout(() => {
+                interaction.channel.delete().catch(() => {});
+            }, 3000);
 
-        if (!member.roles.cache.has(CARGO_ADMIN)) {
-            return interaction.editReply("❌ Apenas admin!");
+            return;
         }
 
-        const produto = id.replace("estoque_", "");
+        // 🔔 ESTOQUE
+        if (id.startsWith("estoque_")) {
 
-        if (!pedidos[produto] || pedidos[produto].length === 0) {
-            return interaction.editReply("⚠️ Ninguém pediu.");
+            if (!member.roles.cache.has(CARGO_ADMIN)) {
+                return interaction.editReply("❌ Apenas admin!");
+            }
+
+            const produto = id.replace("estoque_", "");
+
+            if (!pedidos[produto] || pedidos[produto].length === 0) {
+                return interaction.editReply("⚠️ Ninguém pediu esse produto.");
+            }
+
+            for (const userId of pedidos[produto]) {
+                try {
+                    const user = await client.users.fetch(userId);
+                    await user.send(`🔥 ${produto} voltou ao estoque!`);
+                } catch {}
+            }
+
+            pedidos[produto] = [];
+
+            return interaction.editReply("✅ Todos avisados!");
         }
 
-        for (const userId of pedidos[produto]) {
-            try {
-                const user = await client.users.fetch(userId);
-                await user.send(`🔥 ${produto} voltou ao estoque!`);
-            } catch {}
+        // 📦 LISTA
+        if (produtos.includes(id)) {
+
+            if (!pedidos[id]) pedidos[id] = [];
+
+            if (pedidos[id].includes(interaction.user.id)) {
+                return interaction.editReply("⚠️ Você já está na lista!");
+            }
+
+            pedidos[id].push(interaction.user.id);
+
+            return interaction.editReply(`✅ Você entrou na lista de ${id}`);
         }
 
-        pedidos[produto] = [];
+    } catch (erro) {
+        console.error("ERRO BOTÃO:", erro);
 
-        return interaction.editReply("✅ Avisado!");
-    }
-
-    // 📦 LISTA
-    if (produtos.includes(id)) {
-
-        if (!pedidos[id]) pedidos[id] = [];
-
-        if (pedidos[id].includes(interaction.user.id)) {
-            return interaction.editReply("⚠️ Já está na lista!");
-        }
-
-        pedidos[id].push(interaction.user.id);
-
-        return interaction.editReply(`✅ Você entrou na lista de ${id}`);
+        try {
+            return interaction.editReply("❌ Deu erro aqui, tenta novamente.");
+        } catch {}
     }
 }
